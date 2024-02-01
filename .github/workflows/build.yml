@@ -1,0 +1,33 @@
+name: build
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: npm ci
+
+      - run: npm run build
+        working-directory: packages/mask
+
+      - name: Determine the release version
+        working-directory: packages/mask
+        run: |
+          VERSION=$(jq -r .version package.json)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Build and package
+        working-directory: packages/mask
+        run: |
+          tar -czvf build-${{ env.VERSION }}.tgz ./dist
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-${{ env.VERSION }}
+          path: ./packages/mask/build-${{ env.VERSION }}.tgz
+          retention-days: 7
